@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <string name="app_name">DO-List</string>
+    <string name="hello_world">Hello world!</string>
+    <string name="action_settings">Settings</string>
+    <string name="action_key_dialogue">Set a key</string>
+    <string name="action_set">Set</string>
+    <string name="action_newst">New</string>
+    <string name="title_activity_add_new">AddNew</string>
+    <string name="new_title">Title</string>
+    <string name="new_note">Note</string>
+    <string name="action_date">Date</string>
+    <string name="action_time">Time</string>
+    <string name="title_activity_note">Note</string>
+    <string name="action_delete">Delete</string>
+
+</resources>
