@@ -1,0 +1,54 @@
+alias physicalSP S0;
+alias sysCallNo S1;
+alias fileName S2;
+alias DFS S3;
+DFS = 3072;
+alias fileList S4;
+fileList = 2560;
+alias block S5;
+block = 2562;
+alias data S6;
+data = 512;
+physicalSP = ([PTBR + 2 * (SP / 512)] * 512) + (SP % 512);
+sysCallNo = [physicalSP-1];
+fileName = [physicalSP-3];
+if ( sysCallNo == 1) then
+	while([DFS] ==1 && DFS<3519) do
+		DFS = DFS + 1;
+	endwhile;
+	if(DFS>=3519) then
+		[physicalSP-2] = -1;
+		ireturn;
+	endif;
+	alias BASIC_BLOCK S7;
+	BASIC_BLOCK = DFS-6*512;
+	while([fileList]!=fileName && fileList<3071) do
+		fileList = fileList + 8;
+	endwhile;
+	if(fileList<3071) then
+		[physicalSP-2] = 0;
+		print("1");
+		ireturn;
+	endif;
+	while([block]!=-1 && block<3071) do
+		block = block + 8;
+	endwhile;
+	if(block>=3701) then
+		[physicalSP-2] = -1;
+		ireturn;
+	endif;
+	print(block);
+	[block-2] = fileName;
+	[block] = BASIC_BLOCK;
+	load(1,BASIC_BLOCK);
+	while(data<SCRATCHPAD+256) do
+		[data]=-1;
+		data = data +1;
+	endwhile;
+	store(1,BASIC_BLOCK);
+	[DFS] = 1;
+	store(5,19);
+	store(6,20);
+	[physicalSP-2] = 0;
+endif;
+ireturn;

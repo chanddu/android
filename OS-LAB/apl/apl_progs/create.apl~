@@ -1,0 +1,17 @@
+integer main()
+{
+	integer pid1,pid2,pid3,pid4;
+	print("Before Fork");
+	pid1 = Fork();
+	print("After Fork");
+	pid2 = Fork();
+	Exit();
+	pid3 = Fork();
+	pid4 = Fork();
+	//print(pid1);
+	//print(pid2);
+	//print(pid3);
+	//print(pid4);
+	print("After Fork");
+	return 0;
+}

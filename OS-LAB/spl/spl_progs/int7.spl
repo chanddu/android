@@ -1,0 +1,68 @@
+alias physicalSP S0;
+physicalSP = ([PTBR + 2 * (SP/512)] * 512) + (SP % 512);
+alias syscallNo S1;
+syscallNo = [physicalSP - 1];
+alias PID S2;
+alias currentPCB S3;
+
+if(syscallNo == 10)then
+	PID = (PTBR - 1024)/8;
+	currentPCB = READY_LIST + PID*32 ;
+	alias count S4;
+	count = 0;
+	alias FileTableIndex S5;
+	while(count < 8)do
+		FileTableIndex = [currentPCB + 15 + (2 * count)];
+		[FILE_TABLE + 2 * FileTableIndex + 1] = [FILE_TABLE + 2 * FileTableIndex + 1]  - 1;
+                if([FILE_TABLE + 2 * FileTableIndex + 1] == 0)then
+			[FILE_TABLE + 2 * FileTableIndex] = -1;
+                endif;
+                [currentPCB + 15 + (count * 2)] = -1;
+		[currentPCB + 16 + (count * 2)] = -1;
+		count = count + 1;
+	endwhile;
+	[currentPCB + 1] = 0;
+	count = 0;
+	while(count<4)do
+		alias physicalPageNo S10;
+		physicalPageNo = [PTBR + (2 * count)];
+		if(physicalPageNo == -1)then
+			count = count + 1;
+		else
+			[MEM_LIST + physicalPageNo] = 0;
+			[PTBR + (2 * count)] = -1;
+			[PTBR + (2 * count) + 1] = "00";
+			count = count + 1;
+		endif;
+	endwhile;
+	currentPCB = READY_LIST;
+	while(currentPCB < 2559)do
+		if([currentPCB + 1] == 1)then
+			break;
+		else
+			currentPCB = currentPCB + 32;
+		endif;
+	endwhile;
+	if(currentPCB >= 2559)then
+		halt;
+	else
+		BP = [currentPCB + 2];
+		SP = [currentPCB + 3];
+		R0 = [currentPCB + 7];
+		R1 = [currentPCB + 8];
+		R2 = [currentPCB + 9];
+		R3 = [currentPCB + 10];
+		R4 = [currentPCB + 11];
+		R5 = [currentPCB + 12];
+		R6 = [currentPCB + 13];
+		R7 = [currentPCB + 14];
+		PTBR = [currentPCB + 5];
+		PTLR = [currentPCB + 6];
+		SP = SP + 1;
+		alias newphysicalSP S12;
+		newphysicalSP = ([PTBR + 2 * (SP / 512) ] * 512) + (SP % 512);
+		[newphysicalSP] = [currentPCB + 4];
+		[currentPCB + 1] = 2;
+		ireturn;
+	endif;
+endif;

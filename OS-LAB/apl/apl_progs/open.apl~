@@ -1,0 +1,9 @@
+// APL program to invoke open
+
+integer main()
+{	
+	integer a;
+	a = Open("File");
+	print(a);
+	return 0;
+}

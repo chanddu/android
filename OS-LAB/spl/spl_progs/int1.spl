@@ -1,0 +1,175 @@
+alias physicalSP S0;
+  physicalSP = ([PTBR + 2 * (SP/512)] * 512) + (SP % 512);
+  
+alias SysCallNo S1;
+  SysCallNo = [physicalSP - 1];
+  
+alias ReturnValue S2;
+  ReturnValue = [physicalSP - 2];
+  
+alias FileName S3;
+  FileName = [physicalSP - 3];
+  
+if(SysCallNo == 1) then
+  
+  alias BasicBlock S4;
+    BasicBlock = 512 * 6 + 24;
+    
+  while(BasicBlock <= 512 * 6 + 447) do
+    if([BasicBlock] == 0) then                //checking for a free block in the disk
+      break;
+    endif;
+    
+    BasicBlock = BasicBlock + 1;
+  endwhile;
+  
+  if(BasicBlock == 512 * 6 + 448) then
+    [physicalSP - 2] = -1;
+    ireturn;
+  endif;
+  
+  BasicBlock = BasicBlock - (512 * 6);
+  
+  alias F_A_T S5;
+    F_A_T = FAT;
+   
+  while(F_A_T <= FAT + 505 ) do
+    if([F_A_T] == FileName) then        //checking for the already already existing file in fat table
+      [physicalSP - 2] = 0;
+      ireturn;  
+    endif;
+    
+    F_A_T = F_A_T + 8;
+  endwhile;
+  
+  F_A_T = FAT + 2;
+  
+  while(F_A_T <= FAT + 507) do
+    if([F_A_T] == -1) then            //checking for the empty entry in fat table
+      break;
+    endif;
+    F_A_T = F_A_T + 8;
+  endwhile;
+  
+  if(F_A_T > FAT + 507) then
+     [physicalSP - 2] = -1;
+     ireturn;
+  endif;
+  
+  alias EmptyFatEntry S6;
+    EmptyFatEntry = F_A_T;
+   
+  [EmptyFatEntry - 2] = FileName;
+  [EmptyFatEntry - 1] = 0;
+  [EmptyFatEntry] = BasicBlock;
+
+  load(1,BasicBlock);
+  
+  alias i S7;
+   i = 512;
+   
+   while(i <= 512 + 255) do
+     [i] = -1;
+     i= i + 1;
+   endwhile;
+   
+   [512 *6 + BasicBlock] = 1;
+   
+   store(1,BasicBlock);
+   store(5,19);
+   store(6,20);
+   
+   [physicalSP - 2] = 0;
+   ireturn;
+endif;
+
+if(SysCallNo == 4) then
+  
+  alias F_A_T S4;
+    F_A_T = FAT;
+    
+  alias FAT_Index S5;
+    FAT_Index = -1;
+    
+  while(F_A_T <= FAT + 506) do
+    if([F_A_T] == FileName) then        //finding the fat entry corresponding to the given file name if it exists
+      FAT_Index = (F_A_T - FAT)/8;
+      break;
+    endif;
+    
+    F_A_T = F_A_T + 8;
+  endwhile;
+  
+  if(F_A_T >= FAT + 506) then
+    [physicalSP - 2] = -1;
+    ireturn;
+  endif;
+  
+  alias System_File_Table S6;
+    System_File_Table = FILE_TABLE;
+    
+  while(System_File_Table < FILE_TABLE + 128) do
+    if([System_File_Table] == FAT_Index) then    //checking whether file is open or not
+      [physicalSP - 2] = -1;                     //if open we cant delete the file
+      ireturn;
+      break;
+    endif;
+    
+    System_File_Table = System_File_Table + 2;
+  endwhile;
+  
+  alias BasicBlockAdd S7;
+    BasicBlockAdd = (FAT + 8 * FAT_Index) + 2;
+    
+  alias BasicBlock S10;
+    BasicBlock = [BasicBlockAdd];  
+    
+  alias Counter S8;
+    Counter = 0;
+    
+  load(1,BasicBlock);
+	
+  alias DataBlock S13;
+  
+  while((Counter<256) && ([512 + Counter] != -1)) do
+    DataBlock = [512 + Counter];
+    load(1,DataBlock);
+    
+    alias i S9;
+      i=0;
+      
+    while(i < 512) do
+      [512 + i] = "";
+      i = i + 1;
+    endwhile;
+    
+    [6 * 512 + DataBlock] = 0;
+    
+    store(1,DataBlock);
+    load(1,BasicBlock);
+    Counter = Counter + 1;
+  endwhile;
+  
+  load(1,BasicBlock);
+  
+  alias i S9;
+    i = 0;
+    
+  while(i < 256) do
+    [512 + i] = "";
+    i = i + 1;
+  endwhile;
+  
+  [6 * 512 + BasicBlock] = 0;
+  [FAT + 8 * FAT_Index] = -1;
+  //[FAT_Index] = -1;
+  //[FAT + 8 * FAT_Index + 1] = 0;
+  [FAT + 8 * FAT_Index + 2] = -1;
+  
+  store(6,20);    //storing back the modified disk free list
+  store(5,19);    //storing back the modified fat entry
+  
+  [physicalSP - 2] = 0;
+  ireturn;
+endif;                     
+                                               

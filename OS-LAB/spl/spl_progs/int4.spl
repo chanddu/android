@@ -1,0 +1,104 @@
+alias PhysicalSP S0;
+  PhysicalSP = ([PTBR + 2 * (SP / 512)] * 512) + (SP % 512);
+  
+alias SystemCallNo S1;
+  SystemCallNo = [PhysicalSP - 1];
+  
+alias FileDescriptor S2;
+  FileDescriptor = [PhysicalSP - 4];
+  
+alias WordToWrite S3;
+  WordToWrite = [PhysicalSP - 3];
+  
+if(SystemCallNo == 5) then
+
+  if(FileDescriptor < 0) then
+    [PhysicalSP - 2] = -1;
+    ireturn;
+  endif;
+  
+  if(FileDescriptor > 7) then
+    [PhysicalSP - 2] = -1;
+    ireturn;
+  endif;
+  
+  alias CurrentPID S4;
+    CurrentPID = (PTBR - 1024) / 8;
+    
+  alias CurrentPCB S5;
+    CurrentPCB = READY_LIST + 32 * CurrentPID;
+    
+  alias Process_File_Table S6;
+    Process_File_Table = CurrentPCB + 15;
+    
+  alias System_File_Table_Index S7;
+    System_File_Table_Index = [Process_File_Table + FileDescriptor * 2];
+    
+  if(System_File_Table_Index == -1) then
+    [PhysicalSP - 2] = -1;
+    ireturn;
+  endif;
+  
+  alias LSEEK_Position S8;
+    LSEEK_Position = [Process_File_Table + (FileDescriptor * 2) + 1];
+    
+  alias FAT_Index S9;
+    FAT_Index = [FILE_TABLE + 2 * System_File_Table_Index];
+    
+  alias BasicBlock S10;
+    BasicBlock = [FAT + (8 * FAT_Index) + 2];
+    
+  load(1,BasicBlock);
+  
+  alias DataBlock S11;
+    DataBlock = [512 + LSEEK_Position / 512];
+    
+  alias NewDataBlock S13;  
+    NewDataBlock = -1;
+    
+  if(DataBlock == -1) then
+    
+    alias i S12;
+      i = 24;
+      
+    while(i < 448) do
+      if([6 * 512 + i] == 0) then
+        NewDataBlock = i;
+        print("test 1");
+        break;
+      endif;
+      
+      i = i + 1;
+    endwhile;                        
+                  
+    if(i >= 448) then
+      [PhysicalSP - 2] = -1;
+      ireturn;
+    endif;
+    
+    [6 * 512 + NewDataBlock] = 1;                 //data block is allocated in disk free list 
+    
+    [FAT + 8 * FAT_Index + 1] = [FAT + 8 * FAT_Index + 1] + 512; //file size increases
+    
+    [512 + (LSEEK_Position / 512)] = NewDataBlock;   //new data block is added in basic block
+    
+    store(6,20);
+    store(5,19);
+    
+  endif;
+  
+  DataBlock = [512 + LSEEK_Position / 512];  
+  
+  store(1,BasicBlock);
+  load(1,DataBlock);
+ 
+  [512 + (LSEEK_Position % 512)] = WordToWrite;
+  
+  store(1,DataBlock);
+  
+  [Process_File_Table + (FileDescriptor * 2) + 1] = [Process_File_Table + (FileDescriptor * 2) + 1] + 1; //incrementing lseek by 1
+  
+  [PhysicalSP - 2] = 0;
+  
+  ireturn;
+endif;  	                  

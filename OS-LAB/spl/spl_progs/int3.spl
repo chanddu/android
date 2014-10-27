@@ -1,0 +1,125 @@
+alias PhysicalSP S0;
+  PhysicalSP = ([PTBR + 2 * (SP / 512)] * 512) + (SP % 512);
+  
+alias SystemCallNo S1;
+  SystemCallNo = [PhysicalSP - 1];
+  
+alias FileDescriptor S2;
+  FileDescriptor = [PhysicalSP - 4];
+  
+alias newLseek S3;
+  newLseek = [PhysicalSP - 3];
+  
+if(SystemCallNo == 6) then
+  
+  if(FileDescriptor < 0) then
+    [PhysicalSP - 2] = -1;
+    ireturn;
+  endif;
+  
+  if(FileDescriptor > 7) then
+    [PhysicalSP - 2] = -1;
+    ireturn;
+  endif;
+  
+  alias CurrentPID S4;
+    CurrentPID = (PTBR - 1024) / 8;
+    
+  alias CurrentPCB S5;
+    CurrentPCB = READY_LIST + 32 * CurrentPID;
+    
+  alias Process_File_Table S6;
+    Process_File_Table = CurrentPCB + 15;
+    
+  alias System_File_Table_Index S7;
+    System_File_Table_Index = [Process_File_Table + 2 * FileDescriptor];
+    
+  if(System_File_Table_Index == -1) then
+    [PhysicalSP - 2] = -1;
+    ireturn;
+  endif;
+  
+  alias FAT_Index S8;
+    FAT_Index = [FILE_TABLE + 2 * System_File_Table_Index];
+    
+  alias File_Size S9;
+    File_Size = [FAT + FAT_Index * 8 + 1];
+    
+  if(newLseek < 0) then
+    [PhysicalSP - 2] = -1;
+    ireturn;
+  endif;
+  
+  if(newLseek >= File_Size) then
+    [PhysicalSP - 2] = -1;
+    ireturn;
+  endif;
+  
+  [Process_File_Table + 2 * FileDescriptor + 1] = newLseek;
+  [PhysicalSP - 2] = 0;
+  ireturn;
+endif;
+
+alias WordRead S4;
+  WordRead = [PhysicalSP - 3];
+  
+if(SystemCallNo == 7) then
+
+  if(FileDescriptor < 0) then
+    [PhysicalSP - 2] = -1;
+    ireturn;
+  endif;
+                                      //checking the range of file descriptor  
+  if(FileDescriptor > 7) then
+    [PhysicalSP - 2] = -1;
+    ireturn;
+  endif;
+  
+  alias CurrentPID S5;
+    CurrentPID = (PTBR - 1024) / 8;
+    
+  alias CurrentPCB S6;
+    CurrentPCB = READY_LIST + 32 * CurrentPID;
+     
+  alias Process_File_Table S7;
+    Process_File_Table = CurrentPCB + 15;
+    
+  alias System_File_Table_Index S8;
+    System_File_Table_Index = [Process_File_Table + FileDescriptor * 2];  //obtaining the system wide file table index from pcb
+    
+  if(System_File_Table_Index == -1) then
+    [PhysicalSP - 2] = -1;
+    ireturn;
+  endif;
+  
+  alias LSEEK_Position S9;
+    LSEEK_Position = [Process_File_Table + (2 * FileDescriptor) + 1];
+  
+  alias FAT_Index S10;
+    FAT_Index = [FILE_TABLE + 2 * System_File_Table_Index];    //obtaining fat index from system wide file table
+ 
+  alias BasicBlock S11;
+    BasicBlock = [FAT + (8 * FAT_Index) + 2];           
+ 
+  load(1,BasicBlock);
+  
+  alias FileSize S12;
+    FileSize = [FAT + (8 * FAT_Index) + 1];
+    
+  if(LSEEK_Position >= FileSize) then
+    [PhysicalSP - 2] = -1;
+    ireturn;
+  endif;
+  
+  alias DataBlock S13;
+    DataBlock = [512 + LSEEK_Position / 512];    //obtaining the datablock to be read
+    
+  load(1,DataBlock);
+  
+  [PhysicalSP - 3] = [512 + LSEEK_Position % 512];
+  
+  [Process_File_Table + 2 * FileDescriptor + 1] = [Process_File_Table + 2 * FileDescriptor + 1] + 1; //incrementing lseek by 1
+  
+  [PhysicalSP - 2] = 0;
+  ireturn;
+endif;                       
