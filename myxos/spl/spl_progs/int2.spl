@@ -1,0 +1,152 @@
+alias PhysicalSP S0;
+  PhysicalSP = ([PTBR + 2 * (SP/512)] * 512) + (SP % 512);
+  
+alias SystemCallNo S1;
+  SystemCallNo = [PhysicalSP - 1];
+  
+alias ReturnValue S2;
+  ReturnValue = [PhysicalSP - 2];
+  
+alias FileName S3;
+  FileName = [PhysicalSP - 3];
+  
+if(SystemCallNo == 2) then
+  
+  alias F_A_T S4;
+    F_A_T = FAT;
+    
+  alias BasicBlock S5;
+    BasicBlock = -1;
+    
+  while(F_A_T <= 3072) do
+    if([F_A_T] == FileName) then  //searching filename in fat entry
+       BasicBlock = (F_A_T - FAT) / 8;
+       break;
+    endif;
+    
+    F_A_T = F_A_T + 8;
+  endwhile;
+
+  if(F_A_T >= 3072) then
+    [PhysicalSP - 2] = -1;
+    ireturn;
+  endif;
+  
+  alias File_Table_Entry S6;
+    File_Table_Entry = FILE_TABLE;
+  
+  alias File_Table_Index S7;
+    File_Table_Index = -1;  
+    
+  while(File_Table_Entry < FILE_TABLE + 128) do
+    if([File_Table_Entry] == BasicBlock) then                     //searching fat entry in system wide
+      File_Table_Index = (File_Table_Entry - FILE_TABLE) / 2;
+      break;						          //open file table  
+    endif;
+   
+    File_Table_Entry = File_Table_Entry + 2;
+  endwhile;
+  
+  alias File_Table_Entry1 S8;
+    File_Table_Entry1 = FILE_TABLE;
+
+  if(File_Table_Entry >= FILE_TABLE + 128) then
+    while(File_Table_Entry1 < FILE_TABLE + 128) do
+      if([File_Table_Entry1] == -1) then
+        File_Table_Index = (File_Table_Entry1 - FILE_TABLE) / 2;
+        break;							  //searching empty entry in system wide
+      endif;                                                      //open file table   
+      
+      File_Table_Entry1 = File_Table_Entry1 + 2;
+    endwhile;
+  endif;
+  
+  if(File_Table_Entry1 >= FILE_TABLE + 128) then
+    [PhysicalSP - 2] = -1;
+    ireturn;
+  endif;
+  
+  alias CurrentPID S9;
+    CurrentPID = (PTBR - 1024)/8;
+  
+  alias CurrentPCB S10;
+    CurrentPCB = READY_LIST + 32 * CurrentPID;
+    	 
+  alias Process_File_Table S11;
+    Process_File_Table = CurrentPCB + 15;
+    
+  while(Process_File_Table < CurrentPCB + 31) do 
+  	 
+    if([Process_File_Table] == -1) then           //searching for empty per process file table
+      [Process_File_Table] = File_Table_Index;
+      [Process_File_Table + 1] = 0;
+      
+      break;
+    endif;
+    
+    Process_File_Table = Process_File_Table + 2;
+  endwhile;
+  
+  if(Process_File_Table >= CurrentPCB + 31) then
+    [PhysicalSP - 2] = -1;
+    ireturn;
+  endif;
+  
+  [(2 * File_Table_Index) + FILE_TABLE] = BasicBlock;                      
+  [((2 * File_Table_Index) + FILE_TABLE) + 1] = [((2 * File_Table_Index) + FILE_TABLE) + 1] + 1;  
+  
+  [PhysicalSP - 2] = (Process_File_Table - (CurrentPCB + 15)) / 2;
+  ireturn;
+endif;                                                 
+
+alias FileDescriptor S4;
+  FileDescriptor = [PhysicalSP - 3];
+
+//Close System Call
+  
+if(SystemCallNo == 3) then
+  
+  if(FileDescriptor < 0) then
+    print("test 1");
+    [PhysicalSP - 2] = -1;
+    ireturn;
+  endif;                                        //checking the range of file descriptor
+  
+  if(FileDescriptor > 7) then
+    print("test 2");
+    [PhysicalSP - 2] = -1;
+    ireturn;
+  endif;
+  
+  alias CurrentPID S5;
+    CurrentPID = (PTBR - 1024) / 8;
+    
+  alias CurrentPCB S6;
+    CurrentPCB = READY_LIST + 32 * CurrentPID;
+    
+  alias Process_File_Table S7;
+    Process_File_Table = CurrentPCB + 15;         //per process open file table
+    
+  alias File S8;
+    File = Process_File_Table + FileDescriptor * 2; //file index in per process open file table
+    
+  if([File] == -1) then
+    print("test close");
+    [PhysicalSP - 2] = -1;
+    ireturn;
+  endif;
+  
+  alias System_File_Table S9;
+    System_File_Table = FILE_TABLE + [File] * 2;               //system wide open file table index of the file
+    
+  [System_File_Table + 1] = [System_File_Table + 1] - 1;
+  
+  if([System_File_Table + 1] == 0) then
+    [System_File_Table] = -1;
+  endif;
+  
+  [File] = -1;
+  [File + 1] = -1;
+  [PhysicalSP - 2] = 0;
+  ireturn;
+endif;    

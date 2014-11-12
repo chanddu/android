@@ -1,0 +1,155 @@
+alias physicalSP S0;
+physicalSP = ([PTBR + 2 * (SP/512)] * 512) + (SP % 512);
+alias syscallNo S1;
+syscallNo = [physicalSP - 1];
+alias PID S2;
+PID = (PTBR - 1024)/8;
+alias currentPCB S3;
+alias originalPCB S7;
+originalPCB = READY_LIST + PID*32;
+alias WaitingPID S6;
+WaitingPID = [physicalSP-3];
+if(syscallNo == 10)then					//exit system call
+	alias count S4;
+	count = 0;
+	currentPCB = READY_LIST;
+	while(currentPCB<2559)do
+		if([currentPCB+1]==(100+PID))then		// check if some process is waiting for the exiting process, making ready 1//
+			[currentPCB+1] = 1;
+			print("line 17");
+		endif;
+		currentPCB = currentPCB + 32;
+	endwhile;
+	currentPCB = READY_LIST + PID*32 ;
+	alias FileTableIndex S5;
+	while(count < 8)do
+		FileTableIndex = [currentPCB + 15 + (2 * count)];
+		[FILE_TABLE + 2 * FileTableIndex + 1] = [FILE_TABLE + 2 * FileTableIndex + 1]  - 1;
+                if([FILE_TABLE + 2 * FileTableIndex + 1] == 0)then
+			[FILE_TABLE + 2 * FileTableIndex] = -1;
+                endif;
+                [currentPCB + 15 + (count * 2)] = -1;
+		[currentPCB + 16 + (count * 2)] = -1;
+		count = count + 1;
+	endwhile;
+	[currentPCB + 1] = 0;
+	count = 0;
+	//print("ikkada");
+	while(count<4)do
+		alias physicalPageNo S10;
+		physicalPageNo = [PTBR + (2 * count)];
+		if(physicalPageNo == -1)then
+			count = count + 1;
+		else
+			[MEM_LIST + physicalPageNo] = 0;
+			[PTBR + (2 * count)] = -1;
+			[PTBR + (2 * count) + 1] = "00";
+			count = count + 1;
+		endif;
+	endwhile;
+	//print("ikkada");
+	currentPCB = READY_LIST;
+	while(currentPCB < 2559)do
+		if([currentPCB + 1] == 1)then
+			break;
+		else
+			currentPCB = currentPCB + 32;
+		endif;
+	endwhile;
+	if(currentPCB >= 2559)then
+		print("line 57");
+		halt;
+	else
+		BP = [currentPCB + 2];
+		SP = [currentPCB + 3];
+		R0 = [currentPCB + 7];
+		R1 = [currentPCB + 8];
+		R2 = [currentPCB + 9];
+		R3 = [currentPCB + 10];
+		R4 = [currentPCB + 11];
+		R5 = [currentPCB + 12];
+		R6 = [currentPCB + 13];
+		R7 = [currentPCB + 14];
+		PTBR = [currentPCB + 5];
+		PTLR = [currentPCB + 6];
+		SP = SP + 1;
+		physicalSP = ([PTBR + 2 * (SP / 512) ] * 512) + (SP % 512);
+		[physicalSP] = [currentPCB + 4];
+		[currentPCB + 1] = 2;
+		print([currentPCB]);
+		ireturn;
+	endif;
+endif;
+if(syscallNo==13)then				//wait system call
+	print(WaitingPID);
+	print("--");
+	print([READY_LIST +32*WaitingPID+1]);
+	if(([READY_LIST +(32*WaitingPID)+1]==0 ) || ([READY_LIST +(32*WaitingPID)+1]==2))then
+		print("line86");
+		print([READY_LIST +32*WaitingPID+1]);
+		[physicalSP-2] = -1;
+		ireturn;
+	endif;
+	//print("here");
+	[READY_LIST +32*PID+1] = 100 + WaitingPID;
+	currentPCB = originalPCB +32;
+	alias newPID S15;
+	newPID = PID +1;
+	while(currentPCB != originalPCB)do
+		if([currentPCB + 1] == 1)then
+			break;
+		else
+			newPID = (newPID+1)%32;
+			currentPCB = READY_LIST +32*newPID;
+		endif;
+	endwhile;
+		[originalPCB + 2] = BP;
+		[originalPCB + 3] = SP-1;						// context switching //
+		[originalPCB + 4] = [physicalSP];
+		[originalPCB + 5] = PTBR;
+		[originalPCB + 6] = PTLR;
+		[originalPCB + 7] = R0;
+		[originalPCB + 8] = R1;
+		[originalPCB + 9] = R2;
+		[originalPCB + 10] = R3;
+		[originalPCB + 11] = R4;
+		[originalPCB + 12] = R5;
+		[originalPCB + 13] = R6;
+		[originalPCB + 14] = R7;
+
+		[currentPCB + 1] = 2;
+		BP = [currentPCB + 2];
+		SP = [currentPCB + 3];
+		R0 = [currentPCB + 7];
+		R1 = [currentPCB + 8];
+		R2 = [currentPCB + 9];
+		R3 = [currentPCB + 10];
+		R4 = [currentPCB + 11];
+		R5 = [currentPCB + 12];
+		R6 = [currentPCB + 13];
+		R7 = [currentPCB + 14];
+		PTBR = [currentPCB + 5];
+		PTLR = [currentPCB + 6];
+		SP = SP + 1;
+		physicalSP = ([PTBR + 2 * (SP / 512) ] * 512) + (SP % 512);
+		[physicalSP] = [currentPCB + 4];
+		[physicalSP-2] = 0;
+		print([currentPCB]);
+		print("line 144");
+		breakpoint;
+		ireturn;
+endif;
+
+if(syscallNo == 14)then		//signal system call
+	alias PID S5;
+	PID = (PTBR-1024)/8;
+	currentPCB = READY_LIST;
+	while(currentPCB<2559)do
+		if([currentPCB+1]==(100+PID))then
+			[currentPCB+1] = 1;
+		endif;
+		currentPCB = currentPCB + 32;
+	endwhile;
+	[physicalSP-2] = 0;
+	ireturn;
+endif;
