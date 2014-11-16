@@ -1,13 +1,14 @@
-/* A Bison parser, made by GNU Bison 3.0.2.  */
+/* A Bison parser, made by GNU Bison 2.3.  */
 
-/* Bison interface for Yacc-like parsers in C
+/* Skeleton interface for Bison's Yacc-like parsers in C
 
-   Copyright (C) 1984, 1989-1990, 2000-2013 Free Software Foundation, Inc.
+   Copyright (C) 1984, 1989, 1990, 2000, 2001, 2002, 2003, 2004, 2005, 2006
+   Free Software Foundation, Inc.
 
-   This program is free software: you can redistribute it and/or modify
+   This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
-   the Free Software Foundation, either version 3 of the License, or
-   (at your option) any later version.
+   the Free Software Foundation; either version 2, or (at your option)
+   any later version.
 
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
@@ -15,7 +16,9 @@
    GNU General Public License for more details.
 
    You should have received a copy of the GNU General Public License
-   along with this program.  If not, see <http://www.gnu.org/licenses/>.  */
+   along with this program; if not, write to the Free Software
+   Foundation, Inc., 51 Franklin Street, Fifth Floor,
+   Boston, MA 02110-1301, USA.  */
 
 /* As a special exception, you may create a larger work that contains
    part or all of the Bison parser skeleton and distribute that work
@@ -30,66 +33,57 @@
    This special exception was added by the Free Software Foundation in
    version 2.2 of Bison.  */
 
-#ifndef YY_YY_Y_TAB_H_INCLUDED
-# define YY_YY_Y_TAB_H_INCLUDED
-/* Debug traces.  */
-#ifndef YYDEBUG
-# define YYDEBUG 0
-#endif
-#if YYDEBUG
-extern int yydebug;
-#endif
-
-/* Token type.  */
+/* Tokens.  */
 #ifndef YYTOKENTYPE
 # define YYTOKENTYPE
-  enum yytokentype
-  {
-    NUM = 258,
-    OPER1 = 259,
-    OPER2 = 260,
-    ID = 261,
-    INT = 262,
-    STR = 263,
-    STRING = 264,
-    MAIN = 265,
-    BEGN = 266,
-    END = 267,
-    DECL = 268,
-    ENDDECL = 269,
-    ASG = 270,
-    READ = 271,
-    PRINT = 272,
-    RELOP = 273,
-    LOGOP = 274,
-    NEGOP = 275,
-    IF = 276,
-    ELSE = 277,
-    THEN = 278,
-    ENDIF = 279,
-    WHILE = 280,
-    DO = 281,
-    ENDWHILE = 282,
-    RETURN = 283,
-    SYSCREA = 284,
-    SYSOPEN = 285,
-    SYSWRIT = 286,
-    SYSSEEK = 287,
-    SYSREAD = 288,
-    SYSCLOS = 289,
-    SYSDELE = 290,
-    SYSFORK = 291,
-    SYSEXEC = 292,
-    SYSEXIT = 293,
-    SYSGPID = 294,
-    SYSGPPID = 295,
-    SYSWAIT = 296,
-    SYSSIGNAL = 297,
-    BREAK = 298,
-    CONTINUE = 299,
-    BREAKPOINT = 300,
-    UMIN = 301
-  };
+   /* Put the tokens into the symbol table, so that GDB and other debuggers
+      know about them.  */
+   enum yytokentype {
+     NUM = 258,
+     OPER1 = 259,
+     OPER2 = 260,
+     ID = 261,
+     INT = 262,
+     STR = 263,
+     STRING = 264,
+     MAIN = 265,
+     BEGN = 266,
+     END = 267,
+     DECL = 268,
+     ENDDECL = 269,
+     ASG = 270,
+     READ = 271,
+     PRINT = 272,
+     RELOP = 273,
+     LOGOP = 274,
+     NEGOP = 275,
+     IF = 276,
+     ELSE = 277,
+     THEN = 278,
+     ENDIF = 279,
+     WHILE = 280,
+     DO = 281,
+     ENDWHILE = 282,
+     RETURN = 283,
+     SYSCREA = 284,
+     SYSOPEN = 285,
+     SYSWRIT = 286,
+     SYSSEEK = 287,
+     SYSREAD = 288,
+     SYSCLOS = 289,
+     SYSDELE = 290,
+     SYSFORK = 291,
+     SYSEXEC = 292,
+     SYSEXIT = 293,
+     SYSGPID = 294,
+     SYSGPPID = 295,
+     SYSWAIT = 296,
+     SYSSIGNAL = 297,
+     BREAK = 298,
+     CONTINUE = 299,
+     BREAKPOINT = 300,
+     UMIN = 301
+   };
 #endif
 /* Tokens.  */
 #define NUM 258
@@ -137,25 +131,23 @@ extern int yydebug;
 #define BREAKPOINT 300
 #define UMIN 301
 
-/* Value type.  */
-#if ! defined YYSTYPE && ! defined YYSTYPE_IS_DECLARED
-typedef union YYSTYPE YYSTYPE;
-union YYSTYPE
-{
-#line 8 "apl.y" /* yacc.c:1909  */
 
+
+
+#if ! defined YYSTYPE && ! defined YYSTYPE_IS_DECLARED
+typedef union YYSTYPE
+#line 8 "apl.y"
+{
 	struct tree *n;
 	struct ArgStruct *arg;
-
-#line 151 "y.tab.h" /* yacc.c:1909  */
-};
-# define YYSTYPE_IS_TRIVIAL 1
+}
+/* Line 1529 of yacc.c.  */
+#line 146 "y.tab.h"
+	YYSTYPE;
+# define yystype YYSTYPE /* obsolescent; will be withdrawn */
 # define YYSTYPE_IS_DECLARED 1
+# define YYSTYPE_IS_TRIVIAL 1
 #endif
-
 
 extern YYSTYPE yylval;
 
-int yyparse (void);
-
-#endif /* !YY_YY_Y_TAB_H_INCLUDED  */

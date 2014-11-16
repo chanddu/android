@@ -1,0 +1,83 @@
+alias counter S0;
+breakpoint;
+counter=0;
+while(counter < 64) do		// setting the mem-free-list //
+        if(counter <= 28) then
+                [MEM_LIST + counter] = 1;
+        else
+                [MEM_LIST + counter] = 0;
+        endif;
+	counter = counter + 1;
+endwhile;
+
+counter=0;			// setting the state of pcb //
+while(counter < 1024) do
+	[READY_LIST + counter + 1] = 0;
+	counter = counter + 32;
+endwhile;
+
+
+counter = 0;                    // system-wide open file table entry //
+while (counter < 128) do
+        [FILE_TABLE + counter + 0] = -1;
+        [FILE_TABLE + counter + 1] = 0;
+        counter = counter + 2;
+endwhile;
+
+counter = 0;
+while (counter < 16) do
+        [READY_LIST + 15 + counter] = -1;
+        counter = counter + 1;
+endwhile;                       // per-process open file table //
+
+load(5,19);                     // loading fat //
+load(6,20);                     // loading disk free list //
+
+load(7,1);
+load(8,2);			// exception handler //
+
+load(9,3);
+load(10,4);                     // timer interrupt //
+
+load(11,5);
+load(12,6);			// interrupt 1 //
+
+load(13,7);
+load(14,8);                     // interrupt 2 //
+
+load(15,9);
+load(16,10);                    // interrupt 3 //
+
+load(17,11);
+load(18,12);                    // interrupt 4 //
+
+load(19,13);
+load(20,14);                    // interrupt 5 //
+
+load(21,15);
+load(22,16);                    // interrupt 6 //
+
+load(23,17);
+load(24,18);                    // interrupt 7 //
+
+[READY_LIST + 0] = 0;		// init process pid //
+load(25,21);
+load(26,22);
+load(27,23);			// loading the init process //
+
+PTBR=1024;
+PTLR=4;				// setting the PTBR & PTLR for the process //
+[PTBR + 0] = 25;
+[PTBR + 1] = "01";
+[PTBR + 2] = 26;
+[PTBR + 3] = "01";
+[PTBR + 4] = 27;
+[PTBR + 5] = "01";
+[PTBR + 6] = 28;
+[PTBR + 7] = "01";
+[READY_LIST + 1] = 2;		// setting the sate //
+[READY_LIST + 31] = 0;
+SP= 1536;
+[28*512]=0;			// setting the SP & IP //
+
+ireturn;

@@ -1,0 +1,25 @@
+alias Cause S0;
+alias VPagenum S1;
+alias Ip_addr S2;
+
+Cause = EFR % 10;		// Gets value of cause field (size 1 char)
+VPagenum = (EFR / 10) % 100;    // Gets value of BadVAddr
+Ip_addr = (EFR/1000);		//Gets value of IP at the point of exception
+
+if(Cause == 0)then
+
+else
+  if(Cause==1)then
+    print ("Illegal instruction");
+  endif;
+  if(Cause==2)then
+    print("Illegal memory access");
+  endif;
+  if(Cause==3)then
+    printf("Arithmetic exception");
+  endif;
+  if(Cause==4)then
+    print("Illegal operands");
+  endif;
+  inline "JMP 11776"
+endif;

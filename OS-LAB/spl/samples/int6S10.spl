@@ -1,0 +1,132 @@
+alias counter S0;
+alias PHYSICAL_SP S1;
+
+PHYSICAL_SP = ([PTBR + 2 * (SP/512)] * 512) + (SP % 512);	//calculating physical stack pointer
+
+alias SYSTEMCALL S2;
+SYSTEMCALL = [PHYSICAL_SP - 1];					//fetching systemcall number
+
+
+
+if(SYSTEMCALL == 9) then			// if exec systemcall
+	alias fat S4;
+	fat = 2560;
+	alias filename S3;
+	filename = [PHYSICAL_SP - 3];	// fetching argument
+
+	while( fat<3071 && [fat]!= filename ) do   //searching for FAT index of required file
+		fat = fat + 8;
+	endwhile;
+
+	if(fat>3071) then              //checking if fat index obtained is valid or not
+		[PHYSICAL_SP - 2] = -1;
+		ireturn;
+	endif;
+
+
+	load(1,[fat+2]);		// loading basic block to scratchpad
+
+	alias counter S5;
+	alias newcount S6;
+	counter = 0;
+	newcount = 0;
+
+
+	alias CURRENT_PID S7;
+	alias CURRENT_PCB S8;
+
+	CURRENT_PID = (PTBR - 1024)/8;				// calculating current process id
+	CURRENT_PCB = READY_LIST + CURRENT_PID*32;
+
+
+
+	counter = 0;
+	while(counter<3)do
+		if([PTBR + 2*counter + 1]=="01"||[PTBR + 2*counter + 1]=="11")then
+			[MEM_LIST+[PTBR+2*counter]] = [MEM_LIST+[PTBR+2*counter]] - 1;
+		endif;
+		if([PTBR + 2*counter + 1]=="00"||[PTBR + 2*counter + 1]=="10" && [PTBR + 2*counter]>=448)then
+			[DISK_LIST+[PTBR+2*counter]] = [DISK_LIST+[PTBR+2*counter]] -1;
+			store(6,20);
+		endif;
+		counter = counter + 1;
+	endwhile;
+
+	counter = 0;							// calculating the number of free pages available
+	while(counter<64)do
+		if([MEM_LIST+counter]==0)
+			freecount = freecount +1;
+		endif;
+	endwhile;
+
+			if(freecount < 3) then	// if  sufficient free segments are not present
+				[PHYSICAL_SP - 2] = -1;
+				ireturn;
+			endif;
+			count = 0;
+
+			while(count < 4) do
+				counter = 0;
+				while(counter < 64) do
+					if( [MEM_LIST + counter] == 0 ) then
+						[PTBR + 2*count] = counter;
+						if(count==4)then
+							[PTBR + 2*count + 1] = "00";
+						end
+							[PTBR + 2*count + 1] = "01";
+						[MEM_LIST + counter] = 1;
+					endif;
+					counter = counter + 1;
+				endwhile;
+				count = count + 1;
+			endwhile;
+
+		endif;
+	endif;
+
+
+	counter = 0;
+	while((counter < 3) && ([512 + counter] != -1)) do
+		load([PTBR + 2*counter],[512 + counter]);
+		counter = counter + 1;
+	endwhile;
+
+	alias FILE_DESCRIPTOR S12;
+	FILE_DESCRIPTOR = 0;
+
+	while(FILE_DESCRIPTOR < 8 &&  [CURRENT_PCB + 15 + 2*FILE_DESCRIPTOR] != -1) do
+		alias SYSTEM_WIDE_POINTER S13;
+		SYSTEM_WIDE_POINTER = [CURRENT_PCB + 15 + 2*FILE_DESCRIPTOR];	// calculating index of the system wide table
+
+		[FILE_TABLE + 2*SYSTEM_WIDE_POINTER + 1] = [FILE_TABLE + 2*SYSTEM_WIDE_POINTER + 1] - 1; // decrementing instances
+		if([FILE_TABLE + 2*SYSTEM_WIDE_POINTER + 1] == 0 ) then		// if number of open instances are 0 then removing
+			[FILE_TABLE + 2*SYSTEM_WIDE_POINTER] = -1;
+		endif;
+
+
+		[CURRENT_PCB + 15 + 2*FILE_DESCRIPTOR] = -1;		// removing pointer to systemwide open file table
+		[CURRENT_PCB + 15 + 2*FILE_DESCRIPTOR + 1] = -1;	// resetting lseek value
+
+		FILE_DESCRIPTOR = FILE_DESCRIPTOR + 1;
+	endwhile;
+
+	SP = 3*512;
+	PHYSICAL_SP = ([PTBR + 2 * (SP / 512)] * 512) ;
+	[PHYSICAL_SP] = 0;
+
+	ireturn;
+endif;
+if(SYSTEMCALL==11)then
+	alias pid S15;
+	pid = (PTBR - 1024)/8;
+	[PHYSICAL_SP - 2] = pid;
+	ireturn;
+endif;
+if(SYSTEMCALL==12)then
+	alias pid S15;
+	pid = (PTBR - 1024)/8;
+	alias ppid S5;
+	ppid = [READY_LIST + (pid * 32) + 31];
+	[PHYSICAL_SP - 2] = ppid;
+	ireturn;
+endif;

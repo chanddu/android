@@ -1,0 +1,166 @@
+alias currentPCB S0;
+currentPCB = READY_LIST + (PTBR - 1024)*4;
+
+alias counter S1;
+
+alias physicalSP S2;
+physicalSP = [PTBR + 2*(SP/512)]*512 + (SP%512);
+
+alias newPCB S3;
+
+alias ret_val S4;
+ret_val = physicalSP - 2;
+
+alias sys_call S5;
+sys_call = [physicalSP - 1];
+
+counter = [currentPCB + 0] + 1;
+
+alias flag S6;
+flag=0;
+
+alias waiting_pid S9;
+waiting_pid = [physicalSP - 3];
+
+alias pid S8;
+
+breakpoint;
+
+if(sys_call == 14) then								// Signal System Call //
+	pid = 100 + [currentPCB];
+	counter = 0;
+	while(counter < 32) do
+		if([READY_LIST + 32*counter + 1] == pid) then			// making 100 + pid of current process to 1 //
+			[READY_LIST + 32*counter + 1] = 1;
+		endif;
+		counter = counter + 1;
+	endwhile;
+[ret_val] = 1;
+breakpoint;
+ireturn;
+endif;
+
+if(sys_call == 13) then								// Wait System Call //
+	newPCB = READY_LIST + (32*waiting_pid);
+        if(([newPCB + 1] == 2) || ([newPCB + 1] == 0)) then			// if awaited process 2 or 0 ret -1 //
+                [ret_val] = -1;
+                ireturn;
+        endif;
+
+        [currentPCB + 1] = 100 + waiting_pid;					// making current process wait for the awaited process //
+	counter = [currentPCB] + 1;
+	while(currentPCB != (READY_LIST + 32*counter)) do
+		if([READY_LIST + 32*counter + 1] == 1) then			// allocating next process //
+			break;
+		endif;
+		counter = counter + 1;
+		if((READY_LIST + 32*counter) == 2560) then
+			counter = 0;
+		endif;
+	endwhile;
+breakpoint;
+	newPCB = READY_LIST + 32*counter;
+
+	[currentPCB + 2] = BP;
+        [currentPCB + 3] = SP-1;						// context switching //
+        [currentPCB + 4] = [physicalSP];
+        [currentPCB + 5] = PTBR;
+        [currentPCB + 6] = PTLR;
+        [currentPCB + 7] = R0;
+        [currentPCB + 8] = R1;
+        [currentPCB + 9] = R2;
+        [currentPCB + 10] = R3;
+        [currentPCB + 11] = R4;
+        [currentPCB + 12] = R5;
+        [currentPCB + 13] = R6;
+        [currentPCB + 14] = R7;
+breakpoint;
+endif;
+
+if(sys_call != 13) then								// exit system call //
+
+	counter = 0;
+	pid = 100 + [currentPCB];
+	while((READY_LIST + 32*counter) != 2560) do
+		if([READY_LIST + 32*counter + 1] == pid) then			// check if some process is waiting for the exiting process, making ready 1//
+			[READY_LIST + 32*counter + 1] = 1;
+		endif;
+		counter = counter + 1;
+	endwhile;
+breakpoint;
+	counter = [currentPCB] + 1;
+	while(currentPCB != (READY_LIST + 32*counter)) do
+		if([READY_LIST + 32*counter + 1] == 1) then			// finding  the next process //
+			flag = 1;
+			break;
+	        endif;
+		counter = counter + 1;
+		if((READY_LIST + 32*counter) == 2560) then
+			counter = 0;
+		endif;
+	endwhile;
+breakpoint;	
+	if(flag == 0) then
+		[ret_val] = 0;							// if no next process halt //
+		halt;
+	endif;
+	
+breakpoint;
+newPCB = READY_LIST + 32*counter;						// else new pcb //
+
+// closing files //
+
+	counter=0;
+	while(counter < 8) do
+		if([currentPCB + 15 + 2*counter] != -1) then
+			[FILE_TABLE + (2*[currentPCB + 15 + 2*counter]) + 1] = [FILE_TABLE + (2*[currentPCB + 15 + 2*counter]) + 1] - 1;
+				if([FILE_TABLE + (2*[currentPCB + 15 + 2*counter]) + 1]==0) then
+					[FILE_TABLE + (2*[currentPCB + 15 + 2*counter])] = -1;
+				endif;
+			[currentPCB + 15 + 2*counter] = -1;
+			[currentPCB + 15 + 2*counter] = -1;
+		endif;
+		counter = counter + 1;
+	endwhile;
+breakpoint;
+// end //
+
+	[currentPCB + 1] = 0;
+
+	[MEM_LIST + [PTBR + 0]] = 0;						// freeing the memory //
+	[MEM_LIST + [PTBR + 2]] = 0;
+	[MEM_LIST + [PTBR + 4]] = 0;
+	[MEM_LIST + [PTBR + 6]] = 0;
+
+	[PTBR + 0] = -1;
+        [PTBR + 1] = "00";
+        [PTBR + 2] = -1;							// freeing the page table //
+        [PTBR + 3] = "00";
+        [PTBR + 4] = -1;
+        [PTBR + 5] = "00";
+        [PTBR + 6] = -1;
+        [PTBR + 7] = "00";
+endif;
+
+	[newPCB + 1] = 2;
+	BP = [newPCB + 2];
+	SP = [newPCB + 3];
+	PTBR = [newPCB + 5];							// context switching //
+	PTLR = [newPCB + 6];
+	R0 = [newPCB + 7];
+	R1 = [newPCB + 8];
+	R2 = [newPCB + 9];
+	R3 = [newPCB + 10];
+	R4 = [newPCB + 11];
+	R5 = [newPCB + 12];
+	R6 = [newPCB + 13];
+	R7 = [newPCB + 14];
+breakpoint;
+SP = SP + 1;
+physicalSP = ([PTBR + 2*(SP/512)] * 512) + (SP%512);
+	[physicalSP] = [newPCB + 4];						// setting ip for the next process //
+	[ret_val] = 0;
+	
+breakpoint;
+ireturn;
+

@@ -1,9 +1,0 @@
-// APL program to invoke Delete
-
-integer main()
-{	
-	integer a;
-	a = Delete("File");
-	print(a);
-	return 0;
-}

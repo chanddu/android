@@ -1,9 +1,9 @@
-// APL program to invoke open
+// APL program to invoke Getpid
 
 integer main()
 {	
 	integer a;
-	a = Open("File");
+	a = Getpid();
 	print(a);
 	return 0;
 }

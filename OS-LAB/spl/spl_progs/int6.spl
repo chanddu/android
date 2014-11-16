@@ -119,3 +119,17 @@ if(syscall == 9)then
 		ireturn;		
 	endif;
 endif; 
+if(syscall==11)then
+	alias pid S15;
+	pid = (PTBR - 1024)/8;
+	[physicalSP - 2] = pid;
+	ireturn;
+endif;
+if(syscall==12)then
+	alias pid S15;
+	pid = (PTBR - 1024)/8;
+	alias ppid S5;
+	ppid = [READY_LIST + (pid * 32) + 31];
+	[physicalSP - 2] = ppid;
+	ireturn;
+endif;

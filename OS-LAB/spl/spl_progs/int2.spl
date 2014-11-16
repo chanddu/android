@@ -26,7 +26,7 @@ if(SystemCallNo == 2) then
     
     F_A_T = F_A_T + 8;
   endwhile;
-  
+
   if(F_A_T >= 3072) then
     [PhysicalSP - 2] = -1;
     ireturn;

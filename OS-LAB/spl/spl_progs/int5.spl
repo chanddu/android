@@ -78,6 +78,7 @@ if(SystemCallNo==8)then
 	[READY_LIST + (childPID * 32) + 14] = R7;
 	alias parentPID S9;
 	parentPID = (PTBR - 1024) / 8;
+	[READY_LIST + (childPID * 32) + 31] = parentPID;
 	count = 15;
 	while(count < 31)do
 		[READY_LIST + (childPID * 32) + count] = [READY_LIST + (parentPID * 32) + count];
