@@ -6,6 +6,6 @@ load --int=4 ../spl/spl_progs/int4.xsm
 load --int=5 ../spl/spl_progs/int5.xsm
 load --int=6 ../spl/spl_progs/int6.xsm
 load --int=7 ../spl/spl_progs/int7.xsm
-load --init ../apl/apl_progs/create.xsm
+load --init ../apl/apl_progs/sample.xsm
 load --int=timer ../spl/spl_progs/timer.xsm
 load --os ../spl/spl_progs/os_startup.xsm

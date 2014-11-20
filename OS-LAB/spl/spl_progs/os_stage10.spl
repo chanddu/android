@@ -1,0 +1,75 @@
+load(7,1);//loading exhandler
+load(8,2);
+load(23,17);//loading int7
+load(24,18);
+load(5,19); //loading FAT
+load(6,20); //loading disk free list
+load(11,5); //loading int1
+load(12,6);
+load(13,7); //loading int2
+load(14,8);
+load(15,9); //loading int3
+load(16,10);
+load(17,11);//loading int4
+load(18,12);
+load(19,13);//loading int5
+load(20,14);
+load(21,15);//loading int6
+load(22,16);
+load(9,3);//loading timerint
+load(10,4);
+PTBR = 1024;
+PTLR = 4;
+[PTBR + 0] = 21;
+[PTBR + 1] = "00";
+[PTBR + 2] = 22;
+[PTBR + 3] = "00";
+[PTBR + 4] = 23;
+[PTBR + 5] = "00";
+[PTBR + 6] = 28;
+[PTBR + 7] = "01";
+[READY_LIST] = 0;
+[READY_LIST + 1] = 2;
+[READY_LIST + 31] = 0;
+SP = 3*512;
+[28*512] = 0;
+alias counter S7;
+counter = 0;
+while (counter < 128) do
+	[FILE_TABLE + counter + 0 ] = -1;
+	[FILE_TABLE + counter + 1 ] = 0;
+	counter = counter + 2;
+endwhile;
+counter = 0;
+alias process S8 ;
+process = 1536 + 15;
+while (process < 2559)do
+	while (counter < 16)do
+		[process + 0 + counter] = -1;
+		[process + 1 + counter] = -1;
+		counter = counter + 2;
+	endwhile;
+	process = process + 32;
+endwhile;
+counter = 1280;
+while(counter < 1305)do
+	[counter] = 1;
+	counter = counter + 1;	
+endwhile;
+while(counter < 1344)do
+	[counter] = 0;
+	counter = counter + 1;
+endwhile;
+[1308] = 1;
+counter = (1536 + 32);
+while(counter < 2559)do
+	[counter + 1] = 0;
+	counter = counter + 32;
+endwhile;
+counter = (3072 + 448);
+while(counter < 3584)do
+	[counter] = 0;
+	counter = counter + 1;
+endwhile;
+store(6,20); //storing back the dfl
+ireturn;

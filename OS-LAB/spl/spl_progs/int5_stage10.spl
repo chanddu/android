@@ -1,0 +1,154 @@
+print("entering int5");
+alias physicalSP S0;
+alias syscall S1;
+alias ipcb S2;
+physicalSP = ([PTBR + 2 * (SP/512)] * 512) + (SP % 512);
+syscall = [physicalSP - 1];
+if(syscall == 8)then
+	ipcb = 0;
+	while(ipcb < 32)do //checking for free blocks in PCB
+		if([1536 + (ipcb * 32) + 1] == 0)then
+			break;
+		endif;
+		ipcb = ipcb + 1;
+	endwhile;
+	if(ipcb == 32)then //if not found return -1 and exit
+		[physicalSP - 2] = -1;
+		ireturn;
+	else
+		[1536 + (ipcb * 32)] = ipcb;
+	endif;
+//	print "a top ipcb";
+//	print ipcb;
+//	alias validpagescount S3;
+//	validpagescount = 0;
+//	while(validpagescount <= 4)do //checking for the number of valid pages
+//		if([PTBR + (2 * validpagescount) + 1] == "01" || [PTBR + (2 * validpagescount) + 1] == "11")then
+//			validpagescount = validpagescount + 1;
+//		else
+//			break;
+//		endif;
+//	endwhile;
+//	print validpagescount;
+	alias temp S4;
+	temp = 0;
+	alias count S5;
+	count = 0;
+	while(temp < 64)do
+		if([temp + 1280] == 0)then
+			break;
+		endif;
+		temp = temp + 1;
+	endwhile;
+	if(temp >= 64)then
+		[physicalSP - 2] = -1;
+		ireturn;
+	else
+		[1280 + temp] = 1;
+		alias stackpage S6;
+		stackpage = [PTBR + (2 * 3)];
+		while(count < 512)do
+			[temp + count] = [stackpage + count];
+			count = count + 1;
+		endwhile;
+		[1024 + (ipcb * 8) + 6 ] = temp;
+		[1024 + (ipcb * 8) + 7 ] = "01";
+		count = 0;
+		while(count < 6)do
+			[1024 + (ipcb * 8) + count] = [PTBR + count];
+			[1024 + (ipcb * 8) + count + 1] = [PTBR + count + 1];
+			alias page S3;
+                        page = [PTBR + count];
+			if([PTBR + count + 1] == "01" || [PTBR + count + 1] == "11")then
+				[1280 + page] = [1280 + page] + 1;
+			endif;
+			if(page >= 448)then
+			[3072 + page] = [3072 + page] + 1;
+			endif;
+			count = count + 2;	
+		endwhile;
+		store(6,20);
+		
+	endif;
+//	while(temp < 64)do //checking for free pages
+//		if([temp + 1280] == 0)then
+//			count = count + 1;
+//		endif;
+//		if(count >= validpagescount)then
+//			break ;
+//		endif;
+//		temp = temp + 1;
+//	endwhile;
+//	//print count;
+//	if(count < validpagescount)then //if free pages are less than that required
+//		[physicalSP - 1] = -1;
+//		ireturn;
+//	endif;
+//	count = 0;
+//	temp = 0;
+//	while(temp < 64 && count < validpagescount)do
+//		if([temp + 1280] == 0)then
+//			//count = count + 1;
+//			[temp + 1280] = 1;
+//			alias physicalpage S6;
+//			physicalpage = [PTBR + (2 * count)];
+//			alias counter S7;
+//			counter = 0;
+//			while(counter < 512)do
+//				[temp * 512 + counter] = [physicalpage * 512 + counter];
+//				counter = counter + 1;
+//			endwhile;
+//			[1024 + (ipcb * 8)  + (2 * count)] = temp;
+//			[1024 + (ipcb * 8)  + (2 * count) + 1] = [PTBR + (2 * count) + 1];
+//			count = count + 1;
+//		endif;
+//		temp = temp + 1;
+//	endwhile;
+	//breakpoint;
+//	print R0;
+//	print R1;
+//	print R2;
+//	print [physicalSP];	
+	[1536 + (ipcb * 32) + 5] = 1024 + (ipcb * 8); //setting new PTBR
+	[1536 + (ipcb * 32) + 4] = [physicalSP];
+	[1536 + (ipcb * 32) + 3] = SP - 1;
+	[1536 + (ipcb * 32) + 2] = BP;
+	[1536 + (ipcb * 32) + 6] = PTLR;
+	[1536 + (ipcb * 32) + 7] = R0;
+	[1536 + (ipcb * 32) + 8] = R1;
+	[1536 + (ipcb * 32) + 9] = R2;
+	[1536 + (ipcb * 32) + 10] = R3;
+	[1536 + (ipcb * 32) + 11] = R4;
+	[1536 + (ipcb * 32) + 12] = R5;
+	[1536 + (ipcb * 32) + 13] = R6;
+	[1536 + (ipcb * 32) + 14] = R7;
+	alias pid S8;
+	pid = (PTBR - 1024) / 8;
+	[1536 + (ipcb * 32) + 31] = pid;
+	count = 15;
+//	breakpoint;
+//	print "ipcp in int";
+//	print ipcb;
+	while(count < 31)do
+		[1536 + (ipcb * 32) + count] = [1536 + (pid * 32) + count];
+		[1536 + (ipcb * 32) + count + 1] = [1536 + (pid * 32) + count + 1] ;
+//		breakpoint;
+		alias teemp S11;
+		teemp = [1536 + (ipcb * 32) + count];
+		[1344 + (2 * teemp) + 1] = [1344 + (2 * teemp) + 1] + 1;
+//		breakpoint;
+		count = count + 2;
+	endwhile;
+	breakpoint;
+	//print [1536 + (pid * 32) + 1] ;
+	[1536 + (ipcb * 32) + 1] = 1;
+	alias cphysicalSP S9;
+	cphysicalSP = ([(1024 + (ipcb * 8)) + 2 * (SP - 1)/512]	* 512) + ((SP - 1) % 512);
+	[cphysicalSP - 1] = -2;
+	[physicalSP - 2] = ipcb ;
+//	print ipcb;
+	breakpoint;
+	breakpoint;
+	print("exiting int5");
+	ireturn;
+endif;

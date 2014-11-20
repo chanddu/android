@@ -4,6 +4,7 @@ alias childPID S2;
 PhysicalSP = ([PTBR + 2 * (SP/512)] * 512) + (SP % 512);
 SystemCallNo = [PhysicalSP - 1];
 alias parentPID S9;
+alias counter S12;
 parentPID = (PTBR - 1024) / 8;
 if(SystemCallNo==8)then
   childPID = 0;
@@ -19,64 +20,45 @@ if(SystemCallNo==8)then
   else
     [READY_LIST + (childPID * 32)] = childPID;
   endif;
-  alias validPageCount S3;
-  validPageCount = 0;
-  while(validPageCount <= 4)do 				//checking for the number of valid pages
-    if([PTBR + (2 * validPageCount) + 1] == "01" || [PTBR + (2 * validPageCount) + 1] == "11")then
-      validPageCount = validPageCount + 1;
-    else
-      break;
-    endif;
-  endwhile;
   alias iterator S4;
-  alias freePageCount S5;
-  iterator = 0;
-  freePageCount = 0;
-  while(iterator<64)do
-    if([iterator + MEM_LIST]==0)then
-      freePageCount = freePageCount + 1;		//checking for free pages in MEM_LIST
-    endif;
-    if(freePageCount >= 1)then
-      break ;
-    endif;
-    iterator = iterator + 1;
-  endwhile;
-  if(freePageCount < 1)then //if free pages are less than that required
-    [PhysicalSP - 1] = -1;
-    ireturn;
-  endif;
   iterator = 0;
   alias count S6;
   count = 0;
   while(iterator<64)do
     if([MEM_LIST+iterator] == 0)then
-      [MEM_LIST+iterator] = 1;
-      alias physicalPageNo S7;
-      physicalPageNo = [PTBR + 6];		//obtaining physical page number
-      alias counter S8;
-      counter = 0;
-      while(counter<512)do
-        [iterator*512 + counter] = [physicalPageNo*512 + counter];
-        counter = counter + 1;
-      endwhile;
-      [PAGE_TABLE + (childPID*8) + 6] = iterator;
-      [PAGE_TABLE + (childPID*8)  + 7] = "01";
       break;
     endif;
+    iterator = iterator + 1;
   endwhile;
+  if(iterator>=64)then
+    [PhysicalSP-2]=-1;
+    ireturn;
+  else
+    [MEM_LIST+iterator] = 1;
+    alias physicalPageNo S7;
+    physicalPageNo = [PTBR + 6];		//obtaining physical page number
+    alias counter S8;
+    counter = 0;
+    while(counter<512)do
+      [iterator*512 + counter] = [physicalPageNo*512 + counter];
+      counter = counter + 1;
+    endwhile;
+    [PAGE_TABLE + (childPID*8) + 6] = iterator;
+    [PAGE_TABLE + (childPID*8)  + 7] = "01";
   counter = 0;
   while(counter<3)do
     [PAGE_TABLE + (childPID*8) + 2*counter] = [PTBR + 2*counter];
     [PAGE_TABLE + (childPID*8) + 2*counter + 1] = [PTBR + 2*counter + 1];
     if([PTBR + 2*counter + 1]=="01"||[PTBR + 2*counter + 1]=="11")then
-      [MEM_LIST+[PTBR+2*counter]] = [MEM_LIST+[PTBR+2*counter]] + 1;
+      [MEM_LIST+[PTBR+2*counter]] = [MEM_LIST+[PTBR+2*counter]] + 1;		//allocating pagetable for child
     endif;
     if([PTBR + 2*counter + 1]=="00"||[PTBR + 2*counter + 1]=="10" && [PTBR + 2*counter]>=448)then
       [DISK_LIST+[PTBR+2*counter]] = [DISK_LIST+[PTBR+2*counter]] +1;
-      store(6,20);
     endif;
     counter = counter + 1;
   endwhile;
+    store(6,20);
+  endif;
   [READY_LIST + (childPID * 32) + 5] = 1024 + (childPID * 8); //setting new PCB entry
   [READY_LIST + (childPID * 32) + 4] = [PhysicalSP];
   [READY_LIST + (childPID * 32) + 3] = SP - 1;
@@ -92,18 +74,23 @@ if(SystemCallNo==8)then
   [READY_LIST + (childPID * 32) + 14] = R7;
   [READY_LIST + (childPID * 32) + 31] = parentPID;
   count = 15;
+breakpoint;
   while(count < 31)do
     [READY_LIST + (childPID * 32) + count] = [READY_LIST + (parentPID * 32) + count];
     [READY_LIST + (childPID * 32) + count + 1] = [READY_LIST + (parentPID * 32) + count + 1];	//copying per process entries
     alias temp S10;
     temp = [READY_LIST + (childPID * 32) + count];
+	if(temp != -1) then
     [FILE_TABLE + (2 * temp) + 1] = [FILE_TABLE + (2 * temp) + 1] + 1;		//increasing open file count
+	endif;
     count = count + 2;
   endwhile;
+breakpoint;
   [READY_LIST + (childPID * 32) + 1] = 1;
   alias childPhysicalSP S11;
   childPhysicalSP = ([(1024 + (childPID * 8)) + 2 * (SP - 1)/512]	* 512) + ((SP - 1) % 512);
   [childPhysicalSP - 1] = -2;
   [PhysicalSP - 2] = childPID ;
+  breakpoint;
   ireturn;
 endif;

@@ -45,12 +45,12 @@ if(syscall == 9)then
     temp = 0;
     while(count < 8)do
       temp = [READY_LIST + 15 + (32 * pid) + (2 * count)];
-  if(temp!=-1)then
+	if(temp!=-1)then
       [FILE_TABLE + 2 * temp + 1] = [FILE_TABLE + 2 * temp + 1]  - 1;
       if([FILE_TABLE + 2 * temp + 1] == 0)then
         [FILE_TABLE + 2 * temp] = -1;
       endif;
-  endif;
+	endif;
                                                                     //closing all files opened by the current process
       [READY_LIST + 15 + (32 * pid) + (2 * count)] = -1;
       [READY_LIST + 16 + (32 * pid) + (2 * count)] = -1;
@@ -59,7 +59,7 @@ if(syscall == 9)then
     SP = 3 * 512;
     temp = [PTBR + (2 * 3)];
     [512 * temp] = 0;
-  breakpoint;
+	breakpoint;
     ireturn;
   endif;
 endif;

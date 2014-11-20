@@ -7,8 +7,6 @@ alias victim S5;
 alias count S6;
 alias counter S7;
 alias physicalSP S8;
-alias flag S9;
-flag = 0;
 SP = SP + 1;
 physicalSP = ([PTBR + 2 * (SP/512)] * 512) + (SP % 512);
 
@@ -33,9 +31,9 @@ if(Cause == 0)then
     if(temp>=64)then
       victim = -1;
       temp = PAGE_TABLE;
-      while(victim==-1)do
+      while(temp<1280)do
         count=1;
-        while(count<6)do                    //6 because stack should not be victim //shared mem to be added
+        while(count<6)do                    //6 because stack should not be victim
           if([temp + count] == "11")then
             [temp + count] = "01";
           else
@@ -45,10 +43,10 @@ if(Cause == 0)then
                 if([DISK_LIST+counter] == 0)then            //second chance page replacement algorithm
                   victim = [temp + count - 1];
                   store(victim,counter);
+                  [MEM_LIST + victim] = 0;
                   [DISK_LIST + counter] = 1;
                   [temp + count - 1] = counter;
                   [temp + count] = "00";
-breakpoint;
                   break;
                 endif;
                 counter = counter + 1;
@@ -57,10 +55,7 @@ breakpoint;
           endif;
           count = count + 2;
         endwhile;
-        temp = (temp + 8);
-        if(temp>=1280)then
-          temp = 1024;
-        endif;
+        temp = temp + 8;
       endwhile;
     endif;
     if(victim == -1)then
@@ -83,16 +78,16 @@ breakpoint;
 
 else
   if(Cause==1)then
-    print (Cause);
+    print ("Illegal instruction");
   endif;
   if(Cause==2)then
-    print(Cause);
+    print("Illegal memory access");
   endif;
   if(Cause==3)then                        //printing other errors according to cause
-    print(Cause);
+    print("Arithmetic exception");
   endif;
   if(Cause==4)then
-    print(Cause);
+    print("Illegal operands");
   endif;
   inline "JMP 11776";
 endif;

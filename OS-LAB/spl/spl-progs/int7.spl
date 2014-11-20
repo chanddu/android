@@ -86,10 +86,50 @@ if(syscallNo==13)then				//wait system call
 		ireturn;
 	endif;
 	[READY_LIST +32*PID+1] = 100 + WaitingPID;
-	[physicalSP-2] = 0;
-	breakpoint;
-	inline "JMP 4608";							//inline to timer interrupt
-	ireturn;
+	currentPCB = originalPCB +32;
+	alias newPID S15;
+	newPID = PID +1;
+	while(currentPCB != originalPCB)do
+		if([currentPCB + 1] == 1)then
+			break;
+		else
+			newPID = (newPID+1)%32;
+			currentPCB = READY_LIST +32*newPID;
+		endif;
+	endwhile;
+		[originalPCB + 2] = BP;
+		[originalPCB + 3] = SP-1;						// context switching //
+		[originalPCB + 4] = [physicalSP];
+		[originalPCB + 5] = PTBR;
+		[originalPCB + 6] = PTLR;
+		[originalPCB + 7] = R0;
+		[originalPCB + 8] = R1;
+		[originalPCB + 9] = R2;
+		[originalPCB + 10] = R3;
+		[originalPCB + 11] = R4;
+		[originalPCB + 12] = R5;
+		[originalPCB + 13] = R6;
+		[originalPCB + 14] = R7;
+
+		[currentPCB + 1] = 2;
+		BP = [currentPCB + 2];
+		SP = [currentPCB + 3];
+		R0 = [currentPCB + 7];
+		R1 = [currentPCB + 8];
+		R2 = [currentPCB + 9];
+		R3 = [currentPCB + 10];
+		R4 = [currentPCB + 11];
+		R5 = [currentPCB + 12];
+		R6 = [currentPCB + 13];
+		R7 = [currentPCB + 14];
+		PTBR = [currentPCB + 5];
+		PTLR = [currentPCB + 6];
+		[physicalSP-2] = 0;
+		SP = SP + 1;
+		physicalSP = ([PTBR + 2 * (SP / 512) ] * 512) + (SP % 512);
+		[physicalSP] = [currentPCB + 4];
+		breakpoint;
+		ireturn;
 endif;
 
 if(syscallNo == 14)then		//signal system call

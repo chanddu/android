@@ -1,0 +1,160 @@
+print("entering int6");
+alias physicalSP S0;
+physicalSP = ([PTBR + 2 * (SP/512)] * 512) + (SP % 512);
+alias syscall S1;
+syscall = [physicalSP - 1];
+alias argument S2;
+argument = [physicalSP - 3];
+alias fat S3;
+alias basicblock S4;
+alias ncodeblocks S6;
+alias temp2 S7;
+alias count S8;
+alias memblock S10;
+alias datablock S11;
+if(syscall == 9)then
+	fat = 2560;
+	while(fat < 3071)do
+		if([fat] == argument)then
+			break;
+		endif;
+		fat = fat + 8;
+	endwhile;
+	if(fat >= 3071)then
+		[physicalSP - 2] = -1;
+		ireturn;
+	else
+		basicblock = [fat + 2];
+		load(1,basicblock);
+		alias temp S5;
+		temp = 0;
+		while((temp+512) < 1024)do
+			if([temp + 512] != -1)then
+				temp = temp+1;
+			else
+				break;
+			endif;
+		endwhile;
+		ncodeblocks = temp;
+		temp = 0;
+		while(temp < 6)do
+			if([PTBR + temp + 1] == "10" || [PTBR + temp + 1] == "00")then
+				temp2 = [PTBR + temp];
+				if(temp2 >= 448)then
+					[3072 + temp2] = [3072 + temp2] - 1;
+				endif;
+			else
+				[1280 + temp2] = [1280 + temp2] - 1;
+			endif;
+			temp = temp + 2;
+		endwhile;
+		temp = 0;
+		temp2 = 0;
+		while(temp < 6 && [512 + temp2] != -1)do
+			[PTBR + temp] = [512 + temp2];
+			[PTBR + temp + 1] = "00";
+			temp = temp + 2;
+			temp2 = temp2 + 1;
+		endwhile;
+		while(temp < 6)do
+			[PTBR + temp] = -1;
+			[PTBR + temp + 1] = "00";
+			temp = temp + 2;
+		endwhile;
+			[PTBR + temp + 1] = "01";	
+//		while(temp < 3)do
+//			if([PTBR + (2 * temp)] == -1)then
+//				break;
+//			else
+//				temp = temp +1;
+//			endif;
+//		endwhile;
+//		nmemcblocks = temp;
+//		if(ncodeblocks < nmemcblocks)then
+//			count = 0;
+//			while(count != ncodeblocks)do
+//				memblock = [PTBR + (2 * count)];
+//				datablock = [512 + count];
+//				load(memblock,datablock);
+//				[PTBR + (2 * count) + 1] = "01";
+//				count = count + 1;
+//			endwhile;
+//			while(count != nmemcblocks)do
+//				memblock = [PTBR + (2 * count)];
+//				[1280 + memblock] = 0;
+//				[PTBR + (2 * count)] = -1;
+//				[PTBR + (2 * count) + 1] = "00";
+//				count = count + 1;
+//			endwhile;
+//				
+//			
+//		endif;
+//		if(ncodeblocks > nmemcblocks)then
+//			temp = 1280;
+//			//alias count S8;
+//			count = 0;
+//			while(count != (ncodeblocks - nmemcblocks) && temp < 1344)do
+//				if([temp] == 0)then
+//				count = count + 1;
+//				endif;
+//				temp = temp + 1;
+//			endwhile;
+//			if(count != (ncodeblocks - nmemcblocks))then
+//				[physicalSP - 2] = -1;
+//				ireturn;
+//			endif;
+//			count = 0;
+//			while(count != nmemcblocks)do
+//				memblock = [PTBR + (2 * count)];
+//                              datablock = [512 + count];
+//                                load(memblock,datablock);
+//                                [PTBR + (2 * count) + 1] = "01";
+//                                count = count + 1;
+//			endwhile;
+//			temp = 1280;
+//			while(count != ncodeblocks && temp < 1344)do
+//				if([temp] == 0)then
+//					[temp] = 1;
+//					memblock = (temp - 1280);
+//					[PTBR + (2 * count)] = memblock;
+//					datablock = [512 + count];
+//					load(memblock,datablock);
+//					[PTBR + (2 * count) + 1] = "01";
+//					count = count + 1;
+//				endif;
+//					temp = temp + 1;
+//			endwhile;	
+//		endif;
+		alias pid S15;
+                pid = (PTBR - 1024) / 8;
+		count = 0;
+		while(count < 8)do
+			temp = [1536 + 15 + (32 * pid) + (2 * count)];
+			[1344 + 2 * temp + 1] = [1344 + 2 * temp + 1]  - 1;
+                        if([1344 + 2 * temp + 1] == 0)then
+                                [1344 + 2 * temp] = -1;
+                        endif;
+
+			[1536 + 15 + (32 * pid) + (2 * count)] = -1;
+			[1536 + 16 + (32 * pid) + (2 * count)] = -1;
+			count = count + 1;
+		endwhile;
+		SP = 3 * 512;
+		temp = [PTBR + (2 * 3)];
+		[512 * temp] = 0;
+		print("exiting int6");
+		ireturn;		
+	endif;
+else
+	if(syscall == 11)then
+		alias pid S15;
+		pid = (PTBR - 1024)/8;
+		[physicalSP - 2] = pid;
+		ireturn;
+	else
+		alias pid S15;
+		pid = (PTBR - 1024)/8;
+		[physicalSP - 2] = [1536 + (pid * 32) + 31];
+		ireturn;
+	endif;	
+endif; 

@@ -1,0 +1,89 @@
+alias cause S0;
+alias vpagenum S1;
+alias ip_addr S2;
+alias ptbrpage S3;
+alias temp S4;
+alias tempee S5;
+alias tem S6;
+alias victim S7;
+alias physicalSP S8;
+SP = SP + 1;
+physicalSP = ([PTBR + 2 * (SP/512)] * 512) + (SP % 512);
+cause = EFR % 10;
+//print("in exhandler");
+vpagenum = (EFR / 10) % 100;
+ip_addr = (EFR / 1000);
+if(cause != 0)then
+	print("error:");
+	print(cause);
+	inline "JMP 11776";
+else
+//	vpagenum = vpagenum / 512;
+	ptbrpage = [PTBR + (2 * vpagenum)];
+	if(ptbrpage == -1)then
+//		print("here");
+		inline "JMP 11776";
+	else
+//		print("in else");
+		temp = 0;
+		while(temp < 64)do
+			if([MEM_LIST + temp] == 0)then
+			break;
+			endif;
+			temp = temp + 1;
+		endwhile;
+		if(temp < 64)then
+			[MEM_LIST + temp] = 1;
+//			print temp;
+			victim = temp;
+		else
+			victim = -1;
+			temp = 1024;
+			while(temp < 1280)do
+				tempee = 1;
+				while(tempee < 6)do
+					if([temp + tempee] == "11")then
+						[temp + tempee] = "01";
+					else
+						if([temp + tempee] == "01")then
+							tem = 448;
+							while([3072 + tem] < 511)do
+								if([3072 + tem] == 0)then
+									victim = [temp + tempee - 1];
+									store(victim,tem);
+									[MEM_LIST + victim] = 0;
+									[3072 + tem] = 1;
+									[temp + tempee - 1] = tem;
+									[temp + tempee] = "00";
+									break;
+								endif;
+								tem = tem + 1;
+							endwhile;
+						endif;
+					endif;
+					tempee = tempee + 2;
+				endwhile;
+				temp = temp + 8;
+			endwhile;
+		endif;
+	endif;
+		if(victim == -1)then
+//			print("in if");
+			inline "JMP 11776";
+		else
+			if(ptbrpage >= 448)then
+				[3072 + ptbrpage] = [3072 + ptbrpage] - 1;
+				load(victim,ptbrpage);
+			else
+				load(victim,ptbrpage);
+			endif;
+			[PTBR + (2 * vpagenum)] = victim;
+			breakpoint;
+			[PTBR + (2 * vpagenum) + 1] = "11";
+//			SP = SP + 1;
+			[physicalSP] = ip_addr;
+		endif;
+//print("out of exhandler");		
+breakpoint;
+ireturn;		
+endif;
