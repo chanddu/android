@@ -1,5 +1,0 @@
-START
-MOV T0,  "reached ex"
-OUT T0
-HALT
-HALT
