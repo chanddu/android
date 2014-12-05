@@ -1,5 +1,4 @@
-myrepo
+android
 ======
 
-ls
-read this
+all android projects done by me will be uploaded here
